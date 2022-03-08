@@ -2,12 +2,26 @@
 class TeleBotLib {
     public $url = "https://api.telegram.org/bot";
     public $token = "";
+    private $logs;
     public function __construct($token = null) {
         $this->setToken($token);
+        $this->logs = array();
     }
     public function setToken($token = null) {
         $this->token = ($token !== null) ? $token : 'setDefaultKey';
         $this->url .= $this->token; 
+    }
+    
+    private function addLog($command, $params, $result){
+        $this->logs[] = array(
+            "command" => $command, 
+            "params" => $params, 
+            "result" => $result
+        );
+    }
+    
+    public function showLogs(){
+        return $this->logs;
     }
     
     public function send($command, $data=array()){
@@ -26,7 +40,9 @@ class TeleBotLib {
         }else{
             $result = file_get_contents($url);
         }
-        return json_decode($result);
+        $result = json_decode($result);
+        $this->addLog($command, $data, $result);
+        return $result;
     }
     
     public function sendMessage($chatId, $text, $parseMode = "html") {
@@ -79,6 +95,11 @@ class TeleBotLib {
         $result = $this->send("pinchatmessage", $postData);
         return $result;
     }
+    
+    public function getMe() {
+        $result = $this->send("getME");
+        return $result;
+    }
     public function getUpdates() {
         $result = $this->send("getUpdates");
         return $result;
@@ -90,5 +111,11 @@ class TeleBotLib {
             $chatId = $results->result[0]->message->chat->id;
         }
         return $chatId;
+    }
+    
+    public function getLastIncomeMessage() {
+        $results = $this->getUpdates();
+        $last = end($results->result);
+        return $last->message->text;
     }
 }
